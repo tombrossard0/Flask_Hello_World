@@ -1,4 +1,4 @@
-name: Build and Deploy Flask App with Ngrok
+name: Preview Flask App via ngrok
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  preview:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,26 +20,26 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Build Docker image
         run: docker build -t flask-ngrok-app .
 
-      - name: Run Flask + ngrok and show preview
+      - name: Run Flask app and show ngrok URL
         run: |
-            # Run container in foreground (not detached) so logs are captured
-            docker run -p 5000:5000 flask-ngrok-app &
-            CONTAINER_PID=$!
+          # Run container in background
+          CONTAINER_ID=$(docker run -d -p 5000:5000 flask-ngrok-app)
 
-            echo "Waiting 15 seconds for Flask + ngrok to start..."
-            sleep 15
+          # Wait a few seconds for ngrok to start
+          sleep 15
 
-            # Fetch ngrok URL from container logs
-            docker logs $(docker ps -q --filter ancestor=flask-ngrok-app) | grep -o 'https://[a-z0-9]*\.ngrok.io'
+          # Extract the ngrok URL from container logs
+          NGROK_URL=$(docker logs $CONTAINER_ID 2>&1 | grep -o 'https://[a-z0-9]*\.ngrok.io')
+          echo "Your temporary preview URL: $NGROK_URL"
 
-            # Keep container alive for 120 seconds
-            sleep 120
+          # Keep container alive for 120 seconds
+          sleep 120
 
-            # Stop the container
-            kill $CONTAINER_PID || true
+          # Stop the container
+          docker stop $CONTAINER_ID
