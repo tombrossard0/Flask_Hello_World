@@ -26,8 +26,17 @@ jobs:
       - name: Build Docker image
         run: docker build -t flask-ngrok-app .
 
-      - name: Run Flask app in Docker
+      - name: Run Flask app in Docker and show ngrok URL
         run: |
-          docker run -d -p 5000:5000 flask-ngrok-app
-          echo "Flask + ngrok running, wait 120 seconds for preview..."
-          sleep 120
+            # Run the container in detached mode
+            CONTAINER_ID=$(docker run -d -p 5000:5000 flask-ngrok-app)
+
+            # Wait for Flask + ngrok to start
+            echo "Waiting 15 seconds for ngrok to initialize..."
+            sleep 15
+
+            # Show the ngrok URL from container logs
+            docker logs $CONTAINER_ID | grep -o 'https://[a-z0-9]*\.ngrok.io'
+
+            # Keep the container alive for 120 seconds
+            sleep 120
