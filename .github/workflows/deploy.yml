@@ -6,11 +6,11 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -26,16 +26,8 @@ jobs:
       - name: Build Docker image
         run: docker build -t flask-ngrok-app .
 
-      - name: Run Docker container
+      - name: Run Flask app in Docker
         run: |
           docker run -d -p 5000:5000 flask-ngrok-app
-          sleep 10  # Attendre que l'application démarre
-
-      - name: Expose Flask app with Ngrok
-        run: |
-          docker run --net=host -d -e NGROK_AUTHTOKEN=${{ secrets.NGROK_AUTH_TOKEN }} ngrok/ngrok http 5000
-          sleep 5  # Attendre que ngrok établisse le tunnel
-          curl --silent --show-error --max-time 5 http://localhost:4040/api/tunnels | jq -r .tunnels[0].public_url
-
-      - name: Wait for 120 seconds
-        run: sleep 120
+          echo "Flask + ngrok running, wait 120 seconds for preview..."
+          sleep 120

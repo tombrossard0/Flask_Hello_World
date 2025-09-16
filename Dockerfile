@@ -1,16 +1,16 @@
 FROM python:3.9-slim
 
-# Définir le répertoire de travail
+# Set working directory
 WORKDIR /app
 
-# Copier les fichiers nécessaires
+# Copy all files
 COPY . /app
 
-# Installer les dépendances
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Exposer le port 5000
+# Expose Flask port
 EXPOSE 5000
 
-# Lancer l'application Flask
-CMD ["python", "app.py"]
+# Start Flask app
+CMD ["python", "-m", "__init__"]
