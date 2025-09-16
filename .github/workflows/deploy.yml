@@ -22,24 +22,34 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
+          # Install ngrok CLI
+          curl -s https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -o ngrok.zip
+          unzip ngrok.zip
+          chmod +x ngrok
 
-      - name: Build Docker image
-        run: docker build -t flask-ngrok-app .
-
-      - name: Run Flask app and show ngrok URL
+      - name: Start Flask app
         run: |
-          # Run container in background
-          CONTAINER_ID=$(docker run -p 5000:5000 flask-ngrok-app)
+          # Run Flask app in background
+          python __init__.py &
+          FLASK_PID=$!
 
-          # Wait a few seconds for ngrok to start
-          sleep 15
+          # Wait a few seconds for Flask to start
+          sleep 5
 
-          # Extract the ngrok URL from container logs
-          NGROK_URL=$(docker logs $CONTAINER_ID 2>&1 | grep -o 'https://[a-z0-9]*\.ngrok.io')
+          # Start ngrok tunnel to port 5000
+          ./ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          ./ngrok http 5000 &
+          NGROK_PID=$!
+
+          # Wait for ngrok to initialize
+          sleep 5
+
+          # Fetch ngrok public URL
+          NGROK_URL=$(curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
           echo "Your temporary preview URL: $NGROK_URL"
 
-          # Keep container alive for 120 seconds
+          # Keep the preview alive for 120 seconds
           sleep 120
 
-          # Stop the container
-          docker stop $CONTAINER_ID
+          # Kill Flask and ngrok processes
+          kill $FLASK_PID $NGROK_PID
